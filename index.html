@@ -291,9 +291,20 @@
       }
 
       @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+
+        .container {
+          padding: 20px;
+          max-width: 100%;
+        }
+
         .wheel-container {
-          width: 300px;
-          height: 300px;
+          width: min(300px, calc(100vw - 60px));
+          height: min(300px, calc(100vw - 60px));
+          max-width: 300px;
+          max-height: 300px;
         }
 
         .wheel-section {
@@ -302,6 +313,10 @@
 
         .question-text {
           font-size: 20px;
+        }
+
+        .question-input {
+          margin-bottom: 30px;
         }
 
         .question-input input {
@@ -313,6 +328,29 @@
         .pointer {
           top: -15px;
           transform-origin: 50% 165px;
+        }
+
+        h1 {
+          font-size: 24px;
+          margin-bottom: 20px;
+        }
+
+        .control-buttons {
+          bottom: 12px;
+          right: 12px;
+          padding: 6px;
+          gap: 6px;
+        }
+
+        .control-button {
+          width: 36px;
+          height: 36px;
+          font-size: 14px;
+        }
+
+        .control-button svg {
+          width: 16px;
+          height: 16px;
         }
       }
     </style>
