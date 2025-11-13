@@ -58,7 +58,8 @@
         border: 2px solid #667eea;
         border-radius: 8px;
         outline: none;
-        width: 120px;
+        min-width: 80px;
+        width: auto;
         transition: border-color 0.3s;
       }
 
@@ -124,7 +125,8 @@
         position: absolute;
         top: -20px;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-50%) rotate(0deg);
+        transform-origin: 50% 220px;
         width: 0;
         height: 0;
         border-left: 20px solid transparent;
@@ -132,6 +134,16 @@
         border-top: 40px solid #333;
         z-index: 100;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        cursor: grab;
+        transition: transform 0.1s ease-out;
+      }
+
+      .pointer:active {
+        cursor: grabbing;
+      }
+
+      .pointer.dragging {
+        transition: none;
       }
 
       .spin-button {
@@ -171,6 +183,113 @@
         min-height: 40px;
       }
 
+      .control-buttons {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        gap: 8px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 8px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .control-button {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: transparent;
+        color: #666;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .control-button:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: #333;
+        border-color: rgba(0, 0, 0, 0.12);
+      }
+
+      .control-button:active {
+        transform: scale(0.95);
+      }
+
+      .control-button svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* 黑暗模式样式 */
+      body.dark-mode {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      }
+
+      body.dark-mode .container {
+        background: #2d2d44;
+        color: #e0e0e0;
+      }
+
+      body.dark-mode h1 {
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .question-text {
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .question-input input {
+        background: #3d3d5c;
+        color: #e0e0e0;
+        border-color: #667eea;
+      }
+
+      body.dark-mode .question-input input:focus {
+        border-color: #764ba2;
+      }
+
+      body.dark-mode .wheel {
+        border-color: #555;
+      }
+
+      body.dark-mode .pointer {
+        border-top-color: #555;
+      }
+
+      body.dark-mode .section-text {
+        color: #e0e0e0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      }
+
+      body.dark-mode .result {
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .control-buttons {
+        background: rgba(45, 45, 68, 0.95);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      body.dark-mode .control-button {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #b0b0b0;
+      }
+
+      body.dark-mode .control-button:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e0e0e0;
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+
       @media (max-width: 600px) {
         .wheel-container {
           width: 300px;
@@ -187,7 +306,13 @@
 
         .question-input input {
           font-size: 20px;
-          width: 100px;
+          min-width: 60px;
+          width: auto;
+        }
+
+        .pointer {
+          top: -15px;
+          transform-origin: 50% 165px;
         }
       }
     </style>
@@ -204,7 +329,7 @@
 
       <div class="wheel-container">
         <div class="wheel" id="wheel"></div>
-        <div class="pointer"></div>
+        <div class="pointer" id="pointer"></div>
         <div class="section-text section-text-1">不做</div>
         <div class="section-text section-text-2">可能做</div>
         <div class="section-text section-text-3">做</div>
@@ -215,16 +340,258 @@
       <div class="result" id="result"></div>
     </div>
 
+    <div class="control-buttons">
+      <button class="control-button" id="langButton" title="切换语言">
+        中/EN
+      </button>
+      <a
+        id="githubLink"
+        href="https://github.com/EaminC/Decider"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="control-button"
+        title="GitHub"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+          />
+        </svg>
+      </a>
+      <button class="control-button" id="themeButton" title="切换主题">
+        🌙
+      </button>
+    </div>
+
     <script>
+      // 语言和主题管理
+      const translations = {
+        zh: {
+          title: "🎯 圆盘抽奖器",
+          questionPrefix: "我要去",
+          questionSuffix: "吗？",
+          spinButton: "开始抽奖",
+          result: "结果：不做！",
+          langButton: "中/EN",
+          themeButton: "🌙",
+          section1: "不做",
+          section2: "可能做",
+          section3: "做",
+          langTitle: "切换语言",
+          themeTitle: "切换主题",
+          githubTitle: "GitHub",
+        },
+        en: {
+          title: "🎯 Decision Wheel",
+          questionPrefix: "Should I",
+          questionSuffix: "?",
+          spinButton: "Spin",
+          result: "Result: Don't do it!",
+          langButton: "EN/中",
+          themeButton: "🌙",
+          section1: "Don't",
+          section2: "Maybe",
+          section3: "Do",
+          langTitle: "Toggle Language",
+          themeTitle: "Toggle Theme",
+          githubTitle: "GitHub",
+        },
+      };
+
+      let currentLang = localStorage.getItem("language") || "zh";
+      let isDarkMode = localStorage.getItem("darkMode") === "true";
+      let pointerAngle = 0; // 初始位置始终在正上方
+
+      // 初始化语言和主题
+      function initLanguage() {
+        updateLanguage(currentLang);
+      }
+
+      function updateLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem("language", lang);
+        const t = translations[lang];
+
+        document.querySelector("h1").textContent = t.title;
+        document.querySelector(".question-text:first-child").textContent =
+          t.questionPrefix;
+        document.querySelector(".question-text:last-child").textContent =
+          t.questionSuffix;
+        document.getElementById("spinButton").textContent = t.spinButton;
+        document.getElementById("langButton").textContent = t.langButton;
+        document.getElementById("langButton").title = t.langTitle;
+        document.getElementById("themeButton").title = t.themeTitle;
+        document.getElementById("githubLink").title = t.githubTitle;
+        document.querySelector(".section-text-1").textContent = t.section1;
+        document.querySelector(".section-text-2").textContent = t.section2;
+        document.querySelector(".section-text-3").textContent = t.section3;
+        document.documentElement.lang = lang;
+      }
+
+      function initTheme() {
+        if (isDarkMode) {
+          document.body.classList.add("dark-mode");
+          document.getElementById("themeButton").textContent = "☀️";
+        } else {
+          document.body.classList.remove("dark-mode");
+          document.getElementById("themeButton").textContent = "🌙";
+        }
+      }
+
+      function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        localStorage.setItem("darkMode", isDarkMode);
+        initTheme();
+      }
+
+      function toggleLanguage() {
+        const newLang = currentLang === "zh" ? "en" : "zh";
+        updateLanguage(newLang);
+      }
+
+      // 初始化指针位置
+      function initPointer() {
+        updatePointerRotation(pointerAngle);
+      }
+
+      // 更新指针旋转角度
+      function updatePointerRotation(angle) {
+        const pointer = document.getElementById("pointer");
+        pointer.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+      }
+
+      // 初始化
+      initLanguage();
+      initTheme();
+      initPointer();
+
+      // 绑定事件
+      document
+        .getElementById("langButton")
+        .addEventListener("click", toggleLanguage);
+      document
+        .getElementById("themeButton")
+        .addEventListener("click", toggleTheme);
+
       const wheel = document.getElementById("wheel");
       const spinButton = document.getElementById("spinButton");
       const result = document.getElementById("result");
+      const pointer = document.getElementById("pointer");
+      const wheelContainer = document.querySelector(".wheel-container");
       let isSpinning = false;
+      let isDragging = false;
+      let dragStartAngle = 0;
+      let dragStartPointerAngle = 0;
 
-      // 计算旋转角度，确保指针始终指向"不做"
-      // 黄色区域（"不做"）在0-120度，位于顶部
-      // 指针固定在顶部，所以旋转后需要让黄色区域回到顶部
-      // 同时确保分界线（0度、120度、240度）不在指针左右20度内
+      // 根据指针角度获取指向的区域
+      // 黄色区域（"不做"）在0-120度
+      // 青色区域（"可能做"）在120-240度
+      // 红色区域（"做"）在240-360度
+      function getSectionFromPointerAngle(angle) {
+        // 将角度标准化到0-360度
+        const normalizedAngle = ((angle % 360) + 360) % 360;
+
+        if (normalizedAngle >= 0 && normalizedAngle < 120) {
+          return 1; // "不做"
+        } else if (normalizedAngle >= 120 && normalizedAngle < 240) {
+          return 2; // "可能做"
+        } else {
+          return 3; // "做"
+        }
+      }
+
+      // 获取结果文本
+      function getResultText(section) {
+        const t = translations[currentLang];
+        if (section === 1) {
+          return t.result; // "不做"
+        } else if (section === 2) {
+          return currentLang === "zh" ? "结果：可能做！" : "Result: Maybe!";
+        } else {
+          return currentLang === "zh" ? "结果：做！" : "Result: Do it!";
+        }
+      }
+
+      // 指针拖动功能
+      function setupPointerDrag() {
+        pointer.addEventListener("mousedown", startDrag);
+        pointer.addEventListener("touchstart", startDrag, { passive: false });
+        document.addEventListener("mousemove", drag);
+        document.addEventListener("touchmove", drag, { passive: false });
+        document.addEventListener("mouseup", endDrag);
+        document.addEventListener("touchend", endDrag);
+      }
+
+      function startDrag(e) {
+        if (isSpinning) return;
+        e.preventDefault();
+        isDragging = true;
+        pointer.classList.add("dragging");
+
+        const containerRect = wheelContainer.getBoundingClientRect();
+        const centerX = containerRect.left + containerRect.width / 2;
+        const centerY = containerRect.top + containerRect.height / 2;
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        // 计算鼠标相对于圆盘中心的角度
+        // atan2返回-180到180度，我们需要转换为0-360度，并且指针初始在顶部（-90度）
+        let angle =
+          Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+        angle = (angle + 90 + 360) % 360; // 转换为以顶部为0度的角度
+        dragStartAngle = angle;
+        dragStartPointerAngle = pointerAngle;
+      }
+
+      function drag(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+
+        const containerRect = wheelContainer.getBoundingClientRect();
+        const centerX = containerRect.left + containerRect.width / 2;
+        const centerY = containerRect.top + containerRect.height / 2;
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        // 计算鼠标相对于圆盘中心的角度
+        let angle =
+          Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+        angle = (angle + 90 + 360) % 360; // 转换为以顶部为0度的角度
+
+        const deltaAngle = angle - dragStartAngle;
+
+        // 处理角度跨越0度的情况
+        let newAngle = dragStartPointerAngle + deltaAngle;
+        if (deltaAngle > 180) {
+          newAngle -= 360;
+        } else if (deltaAngle < -180) {
+          newAngle += 360;
+        }
+
+        pointerAngle = newAngle;
+        updatePointerRotation(pointerAngle);
+
+        // 实时显示结果
+        const section = getSectionFromPointerAngle(pointerAngle);
+        result.textContent = getResultText(section);
+      }
+
+      function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        pointer.classList.remove("dragging");
+        localStorage.setItem("pointerAngle", pointerAngle);
+      }
+
+      // 计算旋转角度，让圆盘旋转后指向指针当前指向的区域
       function spinWheel() {
         if (isSpinning) return;
 
@@ -232,39 +599,50 @@
         spinButton.disabled = true;
         result.textContent = "";
 
-        // 获取当前旋转角度（如果有的话）
+        // 获取当前旋转角度和指针角度
         const currentRotation = getCurrentRotation();
+        const targetSection = getSectionFromPointerAngle(pointerAngle);
 
         // 生成随机旋转圈数（3-8圈）
         const randomSpins = 3 + Math.random() * 5;
 
-        // 计算基础角度：让黄色区域回到顶部
-        // 黄色区域在0-120度，我们需要旋转到360度的倍数
+        // 计算目标区域的角度范围
+        // 黄色区域（"不做"）在0-120度
+        // 青色区域（"可能做"）在120-240度
+        // 红色区域（"做"）在240-360度
+        let targetAngle;
+        if (targetSection === 1) {
+          // "不做" - 选择0-120度之间的随机角度
+          targetAngle = Math.random() * 120;
+        } else if (targetSection === 2) {
+          // "可能做" - 选择120-240度之间的随机角度
+          targetAngle = 120 + Math.random() * 120;
+        } else {
+          // "做" - 选择240-360度之间的随机角度
+          targetAngle = 240 + Math.random() * 120;
+        }
+
+        // 计算需要旋转的角度，让目标区域对准指针
+        // 指针当前角度对应的圆盘位置需要旋转到目标角度
+        const pointerRelativeAngle = ((pointerAngle % 360) + 360) % 360;
+        const adjustment = targetAngle - pointerRelativeAngle;
+
+        // 确保分界线不在指针±20度内
+        const safeOffset = 20 + Math.random() * 60; // 20-80度
+        const finalAdjustment = adjustment + safeOffset;
+
         const baseAdjustment = (360 - (currentRotation % 360)) % 360;
-
-        // 为了避免分界线在指针±20度内，我们需要添加一个偏移
-        // 分界线在：0度、120度、240度
-        // 如果圆盘旋转X度，分界线会在：X度、X+120度、X+240度
-        // 要避免分界线在顶部（0度）的±20度内，需要：
-        // - X % 360 不在 [-20, 20] 或 [340, 360] 范围内
-        // - (X + 120) % 360 不在 [-20, 20] 或 [340, 360] 范围内
-        // - (X + 240) % 360 不在 [-20, 20] 或 [340, 360] 范围内
-        // 同时要让黄色区域（0-120度）在顶部，即X应该在-120到0度之间（或240-360度）
-        // 选择-100到-20度之间的随机角度，这样：
-        // - 0度分界线会在-100到-20度（不在±20度内）
-        // - 120度分界线会在20到100度（不在±20度内）
-        // - 240度分界线会在140到220度（不在±20度内）
-        // - 黄色区域会在-100到20度，包含顶部
-        const safeOffset = 20 + Math.random() * 80; // 20-100度，取负值
-
         const totalRotation =
-          currentRotation + randomSpins * 360 + baseAdjustment - safeOffset;
+          currentRotation +
+          randomSpins * 360 +
+          baseAdjustment +
+          finalAdjustment;
 
         wheel.style.transform = `rotate(${totalRotation}deg)`;
 
         // 3秒后显示结果
         setTimeout(() => {
-          result.textContent = "结果：不做！";
+          result.textContent = getResultText(targetSection);
           isSpinning = false;
           spinButton.disabled = false;
         }, 3000);
@@ -288,16 +666,53 @@
         return angle < 0 ? angle + 360 : angle;
       }
 
+      // 自动调整输入框宽度
+      function adjustInputWidth() {
+        const input = document.getElementById("questionInput");
+        const value = input.value || "";
+        if (value.length === 0) {
+          input.style.width = "80px";
+          return;
+        }
+
+        const tempSpan = document.createElement("span");
+        tempSpan.style.visibility = "hidden";
+        tempSpan.style.position = "absolute";
+        tempSpan.style.whiteSpace = "pre";
+        tempSpan.style.fontSize = window.getComputedStyle(input).fontSize;
+        tempSpan.style.fontFamily = window.getComputedStyle(input).fontFamily;
+        tempSpan.style.fontWeight = window.getComputedStyle(input).fontWeight;
+        tempSpan.style.letterSpacing =
+          window.getComputedStyle(input).letterSpacing;
+        tempSpan.textContent = value;
+        document.body.appendChild(tempSpan);
+        const textWidth = tempSpan.offsetWidth;
+        document.body.removeChild(tempSpan);
+
+        const padding =
+          parseFloat(window.getComputedStyle(input).paddingLeft) +
+          parseFloat(window.getComputedStyle(input).paddingRight);
+        const minWidth = window.innerWidth <= 600 ? 60 : 80;
+        input.style.width = Math.max(minWidth, textWidth + padding + 10) + "px";
+      }
+
+      // 初始化拖动功能
+      setupPointerDrag();
+
       spinButton.addEventListener("click", spinWheel);
 
+      // 输入框自动调整宽度
+      const questionInput = document.getElementById("questionInput");
+      questionInput.addEventListener("input", adjustInputWidth);
+      questionInput.addEventListener("focus", adjustInputWidth);
+      adjustInputWidth(); // 初始化宽度
+
       // 回车键也可以触发
-      document
-        .getElementById("questionInput")
-        .addEventListener("keypress", (e) => {
-          if (e.key === "Enter" && !isSpinning) {
-            spinWheel();
-          }
-        });
+      questionInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !isSpinning) {
+          spinWheel();
+        }
+      });
     </script>
   </body>
 </html>
