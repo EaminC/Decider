@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>圆盘抽奖器</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Microsoft YaHei", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+        width: 100%;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+        font-size: 28px;
+      }
+
+      .question-input {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .question-text {
+        font-size: 24px;
+        color: #333;
+      }
+
+      .question-input input {
+        font-size: 24px;
+        padding: 10px 15px;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        outline: none;
+        width: 120px;
+        transition: border-color 0.3s;
+      }
+
+      .question-input input:focus {
+        border-color: #764ba2;
+      }
+
+      .wheel-container {
+        position: relative;
+        width: 400px;
+        height: 400px;
+        margin: 0 auto 30px;
+      }
+
+      .wheel {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        border: 8px solid #333;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        background: conic-gradient(
+          #ffe66d 0deg 120deg,
+          #4ecdc4 120deg 240deg,
+          #ff6b6b 240deg 360deg
+        );
+      }
+
+      .section-text {
+        position: absolute;
+        font-size: 36px;
+        font-weight: bold;
+        color: #333;
+        text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+        z-index: 10;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+
+      .section-text-1 {
+        /* 不做 - 在顶部 */
+        top: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .section-text-2 {
+        /* 可能做 - 右下 */
+        bottom: 25%;
+        right: 15%;
+      }
+
+      .section-text-3 {
+        /* 做 - 左下 */
+        bottom: 25%;
+        left: 15%;
+      }
+
+      .pointer {
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 20px solid transparent;
+        border-right: 20px solid transparent;
+        border-top: 40px solid #333;
+        z-index: 100;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+      }
+
+      .spin-button {
+        display: block;
+        margin: 0 auto;
+        padding: 15px 40px;
+        font-size: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .spin-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+      }
+
+      .spin-button:active {
+        transform: translateY(0);
+      }
+
+      .spin-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .result {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        min-height: 40px;
+      }
+
+      @media (max-width: 600px) {
+        .wheel-container {
+          width: 300px;
+          height: 300px;
+        }
+
+        .wheel-section {
+          font-size: 24px;
+        }
+
+        .question-text {
+          font-size: 20px;
+        }
+
+        .question-input input {
+          font-size: 20px;
+          width: 100px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎯 圆盘抽奖器</h1>
+
+      <div class="question-input">
+        <span class="question-text">我要去</span>
+        <input type="text" id="questionInput" />
+        <span class="question-text">吗？</span>
+      </div>
+
+      <div class="wheel-container">
+        <div class="wheel" id="wheel"></div>
+        <div class="pointer"></div>
+        <div class="section-text section-text-1">不做</div>
+        <div class="section-text section-text-2">可能做</div>
+        <div class="section-text section-text-3">做</div>
+      </div>
+
+      <button class="spin-button" id="spinButton">开始抽奖</button>
+
+      <div class="result" id="result"></div>
+    </div>
+
+    <script>
+      const wheel = document.getElementById("wheel");
+      const spinButton = document.getElementById("spinButton");
+      const result = document.getElementById("result");
+      let isSpinning = false;
+
+      // 计算旋转角度，确保指针始终指向"不做"
+      // 黄色区域（"不做"）在0-120度，位于顶部
+      // 指针固定在顶部，所以旋转后需要让黄色区域回到顶部
+      // 同时确保分界线（0度、120度、240度）不在指针左右20度内
+      function spinWheel() {
+        if (isSpinning) return;
+
+        isSpinning = true;
+        spinButton.disabled = true;
+        result.textContent = "";
+
+        // 获取当前旋转角度（如果有的话）
+        const currentRotation = getCurrentRotation();
+
+        // 生成随机旋转圈数（3-8圈）
+        const randomSpins = 3 + Math.random() * 5;
+
+        // 计算基础角度：让黄色区域回到顶部
+        // 黄色区域在0-120度，我们需要旋转到360度的倍数
+        const baseAdjustment = (360 - (currentRotation % 360)) % 360;
+
+        // 为了避免分界线在指针±20度内，我们需要添加一个偏移
+        // 分界线在：0度、120度、240度
+        // 如果圆盘旋转X度，分界线会在：X度、X+120度、X+240度
+        // 要避免分界线在顶部（0度）的±20度内，需要：
+        // - X % 360 不在 [-20, 20] 或 [340, 360] 范围内
+        // - (X + 120) % 360 不在 [-20, 20] 或 [340, 360] 范围内
+        // - (X + 240) % 360 不在 [-20, 20] 或 [340, 360] 范围内
+        // 同时要让黄色区域（0-120度）在顶部，即X应该在-120到0度之间（或240-360度）
+        // 选择-100到-20度之间的随机角度，这样：
+        // - 0度分界线会在-100到-20度（不在±20度内）
+        // - 120度分界线会在20到100度（不在±20度内）
+        // - 240度分界线会在140到220度（不在±20度内）
+        // - 黄色区域会在-100到20度，包含顶部
+        const safeOffset = 20 + Math.random() * 80; // 20-100度，取负值
+
+        const totalRotation =
+          currentRotation + randomSpins * 360 + baseAdjustment - safeOffset;
+
+        wheel.style.transform = `rotate(${totalRotation}deg)`;
+
+        // 3秒后显示结果
+        setTimeout(() => {
+          result.textContent = "结果：不做！";
+          isSpinning = false;
+          spinButton.disabled = false;
+        }, 3000);
+      }
+
+      // 获取当前旋转角度
+      function getCurrentRotation() {
+        const style = window.getComputedStyle(wheel);
+        const matrix =
+          style.transform || style.webkitTransform || style.mozTransform;
+
+        if (matrix === "none" || !matrix) {
+          return 0;
+        }
+
+        const values = matrix.split("(")[1].split(")")[0].split(",");
+        const a = values[0];
+        const b = values[1];
+        const angle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
+
+        return angle < 0 ? angle + 360 : angle;
+      }
+
+      spinButton.addEventListener("click", spinWheel);
+
+      // 回车键也可以触发
+      document
+        .getElementById("questionInput")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter" && !isSpinning) {
+            spinWheel();
+          }
+        });
+    </script>
+  </body>
+</html>
