@@ -85,6 +85,7 @@
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
         transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
         background: conic-gradient(
+          from -60deg,
           #ffe66d 0deg 120deg,
           #4ecdc4 120deg 240deg,
           #ff6b6b 240deg 360deg
@@ -528,19 +529,19 @@
       let dragStartPointerAngle = 0;
 
       // 根据指针角度获取指向的区域
-      // 黄色区域（"不做"）在0-120度
-      // 青色区域（"可能做"）在120-240度
-      // 红色区域（"做"）在240-360度
+      // 黄色区域（"不做"）在300-60度（跨越0度）
+      // 青色区域（"可能做"）在60-180度
+      // 红色区域（"做"）在180-300度
       function getSectionFromPointerAngle(angle) {
         // 将角度标准化到0-360度
         const normalizedAngle = ((angle % 360) + 360) % 360;
 
-        if (normalizedAngle >= 0 && normalizedAngle < 120) {
-          return 1; // "不做"
-        } else if (normalizedAngle >= 120 && normalizedAngle < 240) {
+        if (normalizedAngle >= 60 && normalizedAngle < 180) {
           return 2; // "可能做"
-        } else {
+        } else if (normalizedAngle >= 180 && normalizedAngle < 300) {
           return 3; // "做"
+        } else {
+          return 1; // "不做"
         }
       }
 
@@ -554,6 +555,18 @@
         } else {
           return currentLang === "zh" ? "结果：做！" : "Result: Do it!";
         }
+      }
+
+      function getRandomAngleForSection(section) {
+        if (section === 1) {
+          // 320°-360° 与 0°-40°
+          return (320 + Math.random() * 80) % 360;
+        } else if (section === 2) {
+          // 80°-160°
+          return 80 + Math.random() * 80;
+        }
+        // section 3: 200°-280°
+        return 200 + Math.random() * 80;
       }
 
       // 指针拖动功能
@@ -645,36 +658,19 @@
         const randomSpins = 3 + Math.random() * 5;
 
         // 计算目标区域的角度范围
-        // 黄色区域（"不做"）在0-120度
-        // 青色区域（"可能做"）在120-240度
-        // 红色区域（"做"）在240-360度
-        let targetAngle;
-        if (targetSection === 1) {
-          // "不做" - 选择0-120度之间的随机角度
-          targetAngle = Math.random() * 120;
-        } else if (targetSection === 2) {
-          // "可能做" - 选择120-240度之间的随机角度
-          targetAngle = 120 + Math.random() * 120;
-        } else {
-          // "做" - 选择240-360度之间的随机角度
-          targetAngle = 240 + Math.random() * 120;
-        }
+        // 黄色区域（"不做"）在300-60度（跨越0度）
+        // 青色区域（"可能做"）在60-180度
+        // 红色区域（"做"）在180-300度
+        const targetAngle = getRandomAngleForSection(targetSection);
 
         // 计算需要旋转的角度，让目标区域对准指针
         // 指针当前角度对应的圆盘位置需要旋转到目标角度
         const pointerRelativeAngle = ((pointerAngle % 360) + 360) % 360;
-        const adjustment = targetAngle - pointerRelativeAngle;
-
-        // 确保分界线不在指针±20度内
-        const safeOffset = 20 + Math.random() * 60; // 20-80度
-        const finalAdjustment = adjustment + safeOffset;
+        const adjustment = (targetAngle - pointerRelativeAngle + 360) % 360;
 
         const baseAdjustment = (360 - (currentRotation % 360)) % 360;
         const totalRotation =
-          currentRotation +
-          randomSpins * 360 +
-          baseAdjustment +
-          finalAdjustment;
+          currentRotation + randomSpins * 360 + baseAdjustment + adjustment;
 
         wheel.style.transform = `rotate(${totalRotation}deg)`;
 
@@ -702,6 +698,22 @@
         const angle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
 
         return angle < 0 ? angle + 360 : angle;
+      }
+
+      // 获取随机角度，基于目标区域
+      function getRandomAngleForSection(section) {
+        let angle;
+        if (section === 1) {
+          // "不做" - 选择300-60度之间的随机角度
+          angle = 300 + Math.random() * 30;
+        } else if (section === 2) {
+          // "可能做" - 选择60-180度之间的随机角度
+          angle = 60 + Math.random() * 120;
+        } else {
+          // "做" - 选择180-300度之间的随机角度
+          angle = 180 + Math.random() * 120;
+        }
+        return angle;
       }
 
       // 自动调整输入框宽度
